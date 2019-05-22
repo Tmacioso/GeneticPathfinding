@@ -64,7 +64,7 @@ namespace GeneticSFML
             int bestCount = 5;
             int specCount = 70;
             int DnaCount = 1500;
-            int mutationRate = 1;
+            float mutationRate = 0.3f;
 
             RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
 
@@ -121,12 +121,13 @@ namespace GeneticSFML
                         scoredList.Add(new KeyValuePair<Rocket, double>(rocket, d));
                     }
                     scoredList = scoredList.OrderBy(x => x.Value).ToList();
-                    var bestList = new List<Rocket>();
 
+                    var bestList = new List<Rocket>();
                     for (int i = 0; i < bestCount; i++)
                     {
                         bestList.Add(scoredList[i].Key);
                     }
+
 
                     rockets = new List<Rocket>();
                     for (int i = 0; i < specCount; i++)
