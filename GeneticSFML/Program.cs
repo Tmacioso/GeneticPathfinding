@@ -27,7 +27,7 @@ namespace GeneticSFML
             }
             Mutate();
         }
-
+        int gen = 0;
         public int PopulationCount { get; set; }
         public int BestCount { get; set; }
         public int DnaSize { get; set; }
@@ -42,11 +42,17 @@ namespace GeneticSFML
 
         public void Score()
         {
+            gen++;
             var scored = new KeyValuePair<Rocket, double>[PopulationCount];
 
             for (int i = 0; i < PopulationCount; i++)
             {
-                var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
+                //var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
+
+                var score = Math.Sqrt(
+                    Math.Pow((Target.Position.X) - Population[i].Position.X, 2) + 
+                    Math.Pow((Target.Position.Y) - (Window.Size.Y - Population[i].Position.Y), 2));
+
                 scored[i] = new KeyValuePair<Rocket, double>(Population[i], score);
             }
 
@@ -54,7 +60,8 @@ namespace GeneticSFML
                 .OrderBy(x => x.Value)
                 .Take(BestCount);
 
-            if(bestScored.ToArray()[0].Value <= 20)
+            Console.WriteLine($"Generation {gen} - best fitness: {bestScored.First().Value}");
+            if(bestScored.ToArray()[0].Value <= 10)
             {
                 PrintSolution(bestScored.ToArray()[0].Key);
             }
@@ -250,7 +257,7 @@ namespace GeneticSFML
         {
             RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
 
-            var target = new RectangleShape(new Vector2f(20, 20));
+            var target = new RectangleShape(new Vector2f(30, 30));
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
             target.FillColor = Color.Red;
 
