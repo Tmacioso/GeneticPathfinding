@@ -42,9 +42,9 @@ namespace GeneticSFML
             if (step >= DNASize) return;
             switch (DNA[step])
             {
-                case Move.Up:
-                    Position = new Vector2f(Position.X, Position.Y + 1);
-                    break;
+                //case Move.Up:
+                //    Position = new Vector2f(Position.X, Position.Y + 1);
+                //    break;
                 case Move.Left:
                     Position = new Vector2f(Position.X + 1, Position.Y);
                     break;
@@ -54,6 +54,8 @@ namespace GeneticSFML
                 default:
                     break;
             }
+            Position = new Vector2f(Position.X, Position.Y + 1);
+
             step++;
         }
     }
@@ -64,7 +66,7 @@ namespace GeneticSFML
             int bestCount = 5;
             int specCount = 70;
             int DnaCount = 1500;
-            float mutationRate = 0.3f;
+            float mutationRate = 0.15f;
 
             RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
 
