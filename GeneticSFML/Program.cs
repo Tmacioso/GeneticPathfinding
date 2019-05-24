@@ -71,6 +71,13 @@ namespace GeneticSFML
             }
 
         }
+        public void Mutate()
+        {
+            for (int i = 0; i < PopulationCount; i++)
+            {
+                Population[i].Mutate();
+            }
+        }
         public void LazyDraw()
         {
             for (int j = 0; j < DnaSize; j++)
