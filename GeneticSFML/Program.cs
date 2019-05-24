@@ -49,9 +49,17 @@ namespace GeneticSFML
                 var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
                 scored[i] = new KeyValuePair<Rocket, double>(Population[i], score);
             }
-            var best = scored
+
+            var bestScored = scored
                 .OrderBy(x => x.Value)
-                .Take(BestCount)
+                .Take(BestCount);
+
+            if(bestScored.ToArray()[0].Value <= 20)
+            {
+                PrintSolution(bestScored.ToArray()[0].Key);
+            }
+
+            var best = bestScored
                 .Select(x => x.Key)
                 .ToArray();
 
@@ -140,6 +148,34 @@ namespace GeneticSFML
             }
             return false;
         }
+        public void PrintSolution(Rocket rocket)
+        {
+            Window.Clear();
+            Window.Draw(Target);
+            Colliders.ForEach(x => Window.Draw(x));
+
+            var bestRocket = new Rocket(StartPosition, DnaSize, MutationChance);
+            bestRocket.DNA = rocket.DNA;
+
+            for (int j = 0; j < DnaSize; j++)
+            {
+                if (bestRocket.Position.Y >= Window.Size.Y || CheckCollisions(bestRocket)) continue;//If on top, skip
+
+                bestRocket.NextStep();
+                var point = new RectangleShape(new Vector2f(3, 3));
+                point.Position = new Vector2f(bestRocket.Position.X, Window.Size.Y - bestRocket.Position.Y);
+                point.OutlineThickness = 0;
+                point.FillColor = Color.Green;
+                Window.Draw(point);
+            }
+            Window.Display();
+
+
+            Console.WriteLine("Solution: ");
+            rocket.DNA.ToList().ForEach(x => Console.Write(x + " "));
+            Console.WriteLine();
+            Console.ReadLine();
+        }
     }
     public class Rocket
     {
@@ -218,7 +254,7 @@ namespace GeneticSFML
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
             target.FillColor = Color.Red;
 
-            var centerCollider = new RectangleShape(new Vector2f(75, 75));
+            var centerCollider = new RectangleShape(new Vector2f(50, 200));
             centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
             centerCollider.FillColor = Color.Yellow;
             //window.Draw(centerCollider);
