@@ -23,7 +23,7 @@ namespace GeneticSFML
             Population = new Rocket[PopulationCount];
             for (int i = 0; i < PopulationCount; i++)
             {
-                Population[i] = new Rocket(startPosition, dnaSize, mutationChance);
+                Population[i] = new Rocket(StartPosition, DnaSize, MutationChance);
                 Population[i].Mutate();
             }
         }
@@ -36,6 +36,7 @@ namespace GeneticSFML
         public RectangleShape Target { get; set; }
         public Rocket[] Population { get; set; }
         public RenderWindow Window { get; set; }
+        Random random = new Random();
 
         public void Score()
         {
@@ -51,11 +52,23 @@ namespace GeneticSFML
                 .Take(BestCount)
                 .Select(x =>x.Key)
                 .ToArray();
+
             Cross(best);
         }
         public void Cross(Rocket[] best)
         {
             if (best.Length != BestCount) throw new Exception("Best count fucked");
+
+            var newPopulation = new Rocket[PopulationCount];
+            for (int i = 0; i < PopulationCount; i++)
+            {
+                var dnaSplitPlace = random.Next(DnaSize);
+                var dna1 = best[random.Next(BestCount)].DNA.Take(dnaSplitPlace);
+                var dna2 = best[random.Next(BestCount)].DNA.Skip(dnaSplitPlace);
+                var crossedDna = dna1.Concat(dna2).ToArray();
+                newPopulation[i] = new Rocket(StartPosition, DnaSize, MutationChance);
+                newPopulation[i].DNA = crossedDna;
+            }
 
         }
         public void LazyDraw()
