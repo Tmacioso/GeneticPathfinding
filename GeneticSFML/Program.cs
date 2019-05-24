@@ -25,13 +25,13 @@ namespace GeneticSFML
             {
                 Population[i] = new Rocket(StartPosition, DnaSize, BaseMutationChance);
             }
-            if(randomPath)
+            if (randomPath)
             {
                 for (int i = 0; i < PopulationCount; i++)
                 {
                     for (int j = 0; j < DnaSize; j++)
                     {
-                        Population[i].DNA[j] = (Rocket.Move)random.Next(4);
+                        Population[i].DNA[j] = (Rocket.Move)random.Next(3);//3 -> without DOWN
                     }
                 }
             }
@@ -164,7 +164,8 @@ namespace GeneticSFML
 
             for (int i = 0; i < PopulationCount; i++)
             {
-                for (int j = 0; j < DnaSize; j++)
+                VertexArray line = new VertexArray(PrimitiveType.LineStrip);
+                for (uint j = 0; j < DnaSize; j++)
                 {
                     if (Population[i].Position.Y >= Window.Size.Y) break;
                     if (CheckCollisions(Population[i]))
@@ -174,17 +175,16 @@ namespace GeneticSFML
                     }
 
                     Population[i].NextStep();
-                    var point = new RectangleShape(new Vector2f(1, 1));
-                    point.Position = new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y);
-                    point.OutlineThickness = 0;
-                    point.FillColor = new Color(255, 255, 255, 100);
-                    Window.Draw(point);
+                    line.Append(new Vertex(new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y), new Color(255, 255, 255, 35)));
                 }
-                //Window.Display();
+                Window.Draw(line);
+            //Window.Display();
             }
+
             Window.Draw(Target);
             Colliders.ForEach(x => Window.Draw(x));
             Window.Display();
+
         }
         public bool CheckCollisions(Rocket rocket)
         {
@@ -200,6 +200,9 @@ namespace GeneticSFML
         }
         public void PrintSolution(Rocket rocket)
         {
+            //var ss = Window.Capture();
+            //ss.SaveToFile($"[{DateTime.Now}] - Normal");
+
             Window.Clear();
             Window.Draw(Target);
             Colliders.ForEach(x => Window.Draw(x));
@@ -219,7 +222,8 @@ namespace GeneticSFML
                 Window.Draw(point);
             }
             Window.Display();
-
+            //ss = Window.Capture();
+            //ss.SaveToFile($"[{DateTime.Now}] - Highlighted");
 
             Console.WriteLine("Solution: ");
             rocket.DNA.ToList().ForEach(x => Console.Write(x + " "));
@@ -322,8 +326,8 @@ namespace GeneticSFML
             //left2.Position = new Vector2f(0, 140);
             //left2.FillColor = Color.Yellow;
 
-            //var right2 = new RectangleShape(new Vector2f(500-125-50, 20));
-            //right2.Position = new Vector2f(125+50, 140);
+            //var right2 = new RectangleShape(new Vector2f(500 - 125 - 50, 20));
+            //right2.Position = new Vector2f(125 + 50, 140);
             //right2.FillColor = Color.Yellow;
 
 
@@ -348,11 +352,10 @@ namespace GeneticSFML
             var centerCollider = new RectangleShape(new Vector2f(50, 200));
             centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
             centerCollider.FillColor = Color.Yellow;
-            //window.Draw(centerCollider);
-            //window.Display();
+
 
             window.SetActive();
-            var pop = new Generation(200,5, 7500, new Vector2f(window.Size.X / 2, 0), 5f, target, window, true);
+            var pop = new Generation(70, 5, 30000, new Vector2f(window.Size.X / 2, 0), 5f, target, window, true);
             //pop.Colliders.Add(left1);
             //pop.Colliders.Add(right1);
             //pop.Colliders.Add(left2);
