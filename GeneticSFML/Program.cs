@@ -8,6 +8,25 @@ using System.Threading;
 
 namespace GeneticSFML
 {
+    public class Generation
+    {
+        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance)
+        {
+            PopulationCount = populationCount;
+            BestCount = bestCount;
+            DnaSize = dnaSize;
+            StartPosition = startPosition;
+            MutationChance = mutationChance;
+        }
+
+        public int PopulationCount { get; set; }
+        public int BestCount { get; set; }
+        public int DnaSize { get; set; }
+        public Vector2f StartPosition { get; set; }
+        public float MutationChance { get; set; }
+
+
+    }
     public class Rocket
     {
         public enum Move
@@ -16,10 +35,11 @@ namespace GeneticSFML
             Left,
             Right
         }
-        public Vector2f Position { get; set; } = new Vector2f(450, 0);
+        public Vector2f Position { get; set; } = new Vector2f(450, 0);//TODO remove
         public Move[] DNA { get; set; }
-        public int step = 0, DNASize;
-        public float mutationRate = 5;
+        public int Step { get; set; } = 0;
+        public int DNASize { get; set; }
+        public float MutationChance { get; set; }
 
         public Rocket(int genomeSize)
         {
@@ -31,7 +51,7 @@ namespace GeneticSFML
             for (int i = 0; i < DNASize; i++)
             {
                 var r = new Random().NextDouble() * 100;
-                if (100 - mutationRate < r)
+                if (100 - MutationChance < r)
                 {
                     DNA[i] = (Move)new Random().Next(3);
                 }
@@ -39,8 +59,8 @@ namespace GeneticSFML
         }
         public void NextStep()
         {
-            if (step >= DNASize) return;
-            switch (DNA[step])
+            if (Step >= DNASize) return;
+            switch (DNA[Step])
             {
                 //case Move.Up:
                 //    Position = new Vector2f(Position.X, Position.Y + 1);
@@ -56,7 +76,7 @@ namespace GeneticSFML
             }
             Position = new Vector2f(Position.X, Position.Y + 1);
 
-            step++;
+            Step++;
         }
     }
     class Program
@@ -86,7 +106,7 @@ namespace GeneticSFML
             }
             foreach (var r in rockets)
             {
-                r.mutationRate = mutationRate;
+                r.MutationChance = mutationRate;
                 r.Mutate();
             }
             window.SetActive();
@@ -139,7 +159,7 @@ namespace GeneticSFML
                     foreach (var r in rockets)
                     {
                         r.DNA = bestList[new Random().Next(bestCount)].DNA;
-                        r.mutationRate = mutationRate;
+                        r.MutationChance = mutationRate;
                         r.Mutate();
                     }
                     for (int i = 0; i < specCount; i++)
