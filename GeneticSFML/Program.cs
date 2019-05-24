@@ -10,29 +10,51 @@ namespace GeneticSFML
 {
     public class Generation
     {
-        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance, RectangleShape target, RenderWindow renderWindow)
+        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance, RectangleShape target, RenderWindow renderWindow, bool randomPath = false)
         {
             PopulationCount = populationCount;
             BestCount = bestCount;
             DnaSize = dnaSize;
             StartPosition = startPosition;
-            MutationChance = mutationChance;
+            BaseMutationChance = mutationChance;
             Target = target ?? throw new ArgumentNullException(nameof(target));
             Window = renderWindow ?? throw new ArgumentNullException(nameof(renderWindow));
 
             Population = new Rocket[PopulationCount];
             for (int i = 0; i < PopulationCount; i++)
             {
-                Population[i] = new Rocket(StartPosition, DnaSize, MutationChance);
+                Population[i] = new Rocket(StartPosition, DnaSize, BaseMutationChance);
             }
-            Mutate();
+            if(randomPath)
+            {
+                for (int i = 0; i < PopulationCount; i++)
+                {
+                    for (int j = 0; j < DnaSize; j++)
+                    {
+                        Population[i].DNA[j] = (Rocket.Move)random.Next(4);
+                    }
+                }
+            }
+            else
+                Mutate();
+
+            //Window.Clear();
+            //Window.Draw(Target);
+            //Colliders.ForEach(x => Window.Draw(x));
+            //Window.Display();
         }
+        double lastFitness = double.MaxValue;
         int gen = 0;
+
         public int PopulationCount { get; set; }
         public int BestCount { get; set; }
         public int DnaSize { get; set; }
         public Vector2f StartPosition { get; set; }
-        public float MutationChance { get; set; }
+        public float BaseMutationChance { get; set; }
+        public float CurrentMutationChance { get; set; }
+        public float MutationChanceIncrese { get; set; } = 0.1f;
+        public float MaxMutatonChance { get; set; } = 100f;
+        public float LastFitnessOffset { get; set; } = 10f;
         public RectangleShape Target { get; set; }
         public Rocket[] Population { get; set; }
         public RenderWindow Window { get; set; }
@@ -49,8 +71,14 @@ namespace GeneticSFML
             {
                 //var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
 
+                //if(Population[i].Fitness == -1 )
+                //{
+                //    scored[i] = new KeyValuePair<Rocket, double>(Population[i], float.MaxValue);
+                //    continue;
+                //}
+
                 var score = Math.Sqrt(
-                    Math.Pow((Target.Position.X) - Population[i].Position.X, 2) + 
+                    Math.Pow((Target.Position.X) - Population[i].Position.X, 2) +
                     Math.Pow((Target.Position.Y) - (Window.Size.Y - Population[i].Position.Y), 2));
 
                 scored[i] = new KeyValuePair<Rocket, double>(Population[i], score);
@@ -60,8 +88,35 @@ namespace GeneticSFML
                 .OrderBy(x => x.Value)
                 .Take(BestCount);
 
-            Console.WriteLine($"Generation {gen} - best fitness: {bestScored.First().Value}");
-            if(bestScored.ToArray()[0].Value <= 10)
+            if (lastFitness <= bestScored.First().Value + LastFitnessOffset)
+            {
+                CurrentMutationChance += MutationChanceIncrese;
+                if (CurrentMutationChance > MaxMutatonChance) CurrentMutationChance = MaxMutatonChance;
+
+                //Doesnt work lol
+                //bestScored = scored
+                //    .OrderByDescending(x => x.Value)
+                //    .Take(BestCount);//VER EXPERIMENTAL
+
+                //for (int i = 0; i < BestCount; i++)
+                //{
+                //    bestScored.ToArray()[i] = scored.ToArray()[random.Next(PopulationCount)];
+                //}
+
+            }
+            else
+            {
+                CurrentMutationChance = BaseMutationChance;
+            }
+
+            for (int i = 0; i < PopulationCount; i++)
+            {
+                Population[i].MutationChance = CurrentMutationChance;
+            }
+            Console.WriteLine($"Generation {gen} - best fitness: {bestScored.First().Value} Mutation chance: {CurrentMutationChance}%");
+
+
+            if (bestScored.ToArray()[0].Value <= 10)
             {
                 PrintSolution(bestScored.ToArray()[0].Key);
             }
@@ -72,6 +127,8 @@ namespace GeneticSFML
 
             Cross(best);
             Mutate();
+
+            lastFitness = bestScored.First().Value;
         }
         public void Cross(Rocket[] best)
         {
@@ -84,7 +141,7 @@ namespace GeneticSFML
                 var dna1 = best[random.Next(BestCount)].DNA.Take(dnaSplitPlace);
                 var dna2 = best[random.Next(BestCount)].DNA.Skip(dnaSplitPlace);
                 var crossedDna = dna1.Concat(dna2).ToArray();
-                newPopulation[i] = new Rocket(StartPosition, DnaSize, MutationChance);
+                newPopulation[i] = new Rocket(StartPosition, DnaSize, BaseMutationChance);
                 newPopulation[i].DNA = crossedDna;
             }
 
@@ -95,28 +152,6 @@ namespace GeneticSFML
             for (int i = 0; i < PopulationCount; i++)
             {
                 Population[i].Mutate();
-            }
-        }
-        public void LazyDraw()
-        {
-            Window.Clear();
-            Window.Draw(Target);
-            Window.Display();
-
-            for (int j = 0; j < DnaSize; j++)
-            {
-                for (int i = 0; i < PopulationCount; i++)
-                {
-                    if (Population[i].Position.Y >= Window.Size.Y) continue;//If on top, skip
-
-                    Population[i].NextStep();
-                    var point = new RectangleShape(new Vector2f(1, 1));
-                    point.Position = new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y);
-                    point.OutlineThickness = 0;
-                    point.FillColor = Color.White;
-                    Window.Draw(point);
-                    Window.Display();
-                }
             }
         }
         public void FastDraw()
@@ -131,17 +166,25 @@ namespace GeneticSFML
             {
                 for (int j = 0; j < DnaSize; j++)
                 {
-                    if (Population[i].Position.Y >= Window.Size.Y || CheckCollisions(Population[i])) continue;//If on top, skip
+                    if (Population[i].Position.Y >= Window.Size.Y) break;
+                    if (CheckCollisions(Population[i]))
+                    {
+                        Population[i].Fitness = -1;
+                        break;//If on top, skip
+                    }
 
                     Population[i].NextStep();
                     var point = new RectangleShape(new Vector2f(1, 1));
                     point.Position = new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y);
                     point.OutlineThickness = 0;
-                    point.FillColor = Color.White;
+                    point.FillColor = new Color(255, 255, 255, 100);
                     Window.Draw(point);
                 }
-                Window.Display();
+                //Window.Display();
             }
+            Window.Draw(Target);
+            Colliders.ForEach(x => Window.Draw(x));
+            Window.Display();
         }
         public bool CheckCollisions(Rocket rocket)
         {
@@ -161,7 +204,7 @@ namespace GeneticSFML
             Window.Draw(Target);
             Colliders.ForEach(x => Window.Draw(x));
 
-            var bestRocket = new Rocket(StartPosition, DnaSize, MutationChance);
+            var bestRocket = new Rocket(StartPosition, DnaSize, BaseMutationChance);
             bestRocket.DNA = rocket.DNA;
 
             for (int j = 0; j < DnaSize; j++)
@@ -190,7 +233,8 @@ namespace GeneticSFML
         {
             Up,
             Left,
-            Right
+            Right,
+            Down
         }
         public Vector2f Position { get; set; }
         public Move[] DNA { get; set; }
@@ -198,7 +242,7 @@ namespace GeneticSFML
         public int DNASize { get; set; }
         public float MutationChance { get; set; }
 
-
+        public float Fitness { get; set; } = 0;
 
         //public Rocket(int genomeSize)
         //{
@@ -225,7 +269,7 @@ namespace GeneticSFML
                 var r = new Random().NextDouble() * 100;
                 if (100 - MutationChance < r)
                 {
-                    DNA[i] = (Move)new Random().Next(3);
+                    DNA[i] = (Move)new Random().Next(4);
                 }
             }
         }
@@ -236,6 +280,9 @@ namespace GeneticSFML
             {
                 case Move.Up:
                     Position = new Vector2f(Position.X, Position.Y + 1);
+                    break;
+                case Move.Down:
+                    Position = new Vector2f(Position.X, Position.Y - 1);
                     break;
                 case Move.Left:
                     Position = new Vector2f(Position.X + 1, Position.Y);
@@ -261,6 +308,43 @@ namespace GeneticSFML
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
             target.FillColor = Color.Red;
 
+
+            //var left1 = new RectangleShape(new Vector2f(100, 20));
+            //left1.Position = new Vector2f(0, 120);
+            //left1.FillColor = Color.Yellow;
+
+            //var right1 = new RectangleShape(new Vector2f(350, 20));
+            //right1.Position = new Vector2f(150, 120);
+            //right1.FillColor = Color.Yellow;
+
+
+            //var left2 = new RectangleShape(new Vector2f(125, 20));
+            //left2.Position = new Vector2f(0, 140);
+            //left2.FillColor = Color.Yellow;
+
+            //var right2 = new RectangleShape(new Vector2f(500-125-50, 20));
+            //right2.Position = new Vector2f(125+50, 140);
+            //right2.FillColor = Color.Yellow;
+
+
+            var left3 = new RectangleShape(new Vector2f(150, 20));
+            left3.Position = new Vector2f(0, 160);
+            left3.FillColor = Color.Yellow;
+
+            var right3 = new RectangleShape(new Vector2f(500 - 150 - 50, 20));
+            right3.Position = new Vector2f(150 + 50, 160);
+            right3.FillColor = Color.Yellow;
+
+
+            var left4 = new RectangleShape(new Vector2f(175, 20));
+            left4.Position = new Vector2f(0, 180);
+            left4.FillColor = Color.Yellow;
+
+            var right4 = new RectangleShape(new Vector2f(500 - 175 - 50, 20));
+            right4.Position = new Vector2f(175 + 50, 180);
+            right4.FillColor = Color.Yellow;
+
+
             var centerCollider = new RectangleShape(new Vector2f(50, 200));
             centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
             centerCollider.FillColor = Color.Yellow;
@@ -268,8 +352,17 @@ namespace GeneticSFML
             //window.Display();
 
             window.SetActive();
-            var pop = new Generation(100, 5, 1000, new Vector2f(window.Size.X / 2, 0), 5f, target, window);
-            pop.Colliders.Add(centerCollider);
+            var pop = new Generation(200,5, 7500, new Vector2f(window.Size.X / 2, 0), 5f, target, window, true);
+            //pop.Colliders.Add(left1);
+            //pop.Colliders.Add(right1);
+            //pop.Colliders.Add(left2);
+            //pop.Colliders.Add(right2);
+            pop.Colliders.Add(left3);
+            pop.Colliders.Add(right3);
+            pop.Colliders.Add(left4);
+            pop.Colliders.Add(right4);
+            pop.MutationChanceIncrese = 2.5f;
+            //pop.Colliders.Add(centerCollider);
 
             while (window.IsOpen)
             {
