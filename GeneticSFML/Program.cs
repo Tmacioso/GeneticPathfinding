@@ -24,8 +24,8 @@ namespace GeneticSFML
             for (int i = 0; i < PopulationCount; i++)
             {
                 Population[i] = new Rocket(StartPosition, DnaSize, MutationChance);
-                Population[i].Mutate();
             }
+            Mutate();
         }
 
         public int PopulationCount { get; set; }
@@ -54,6 +54,7 @@ namespace GeneticSFML
                 .ToArray();
 
             Cross(best);
+            Mutate();
         }
         public void Cross(Rocket[] best)
         {
@@ -70,6 +71,7 @@ namespace GeneticSFML
                 newPopulation[i].DNA = crossedDna;
             }
 
+            Population = newPopulation;
         }
         public void Mutate()
         {
@@ -80,6 +82,10 @@ namespace GeneticSFML
         }
         public void LazyDraw()
         {
+            Window.Clear();
+            Window.Draw(Target);
+            Window.Display();
+
             for (int j = 0; j < DnaSize; j++)
             {
                 for (int i = 0; i < PopulationCount; i++)
@@ -98,9 +104,14 @@ namespace GeneticSFML
         }
         public void FastDraw()
         {
-            for (int j = 0; j < DnaSize; j++)
+            Window.Clear();
+            Window.Draw(Target);
+            Window.Display();
+
+
+            for (int i = 0; i < PopulationCount; i++)
             {
-                for (int i = 0; i < PopulationCount; i++)
+                for (int j = 0; j < DnaSize; j++)
                 {
                     if (Population[i].Position.Y >= Window.Size.Y) continue;//If on top, skip
 
@@ -111,8 +122,8 @@ namespace GeneticSFML
                     point.FillColor = Color.White;
                     Window.Draw(point);
                 }
+                Window.Display();
             }
-            Window.Display();
         }
     }
     public class Rocket
@@ -186,113 +197,20 @@ namespace GeneticSFML
     {
         static void Main(string[] args)
         {
-            //int bestCount = 5;
-            //int specCount = 70;
-            //int DnaCount = 1500;
-            //float mutationRate = 0.15f;
-
             RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
 
-            //var centerCollider = new RectangleShape(new Vector2f(150, 150));
-            //centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
-            //centerCollider.FillColor = new Color(50, 50, 50);
-
-            var target = new RectangleShape(new Vector2f(50, 20));
+            var target = new RectangleShape(new Vector2f(20, 20));
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
-            target.FillColor = new Color(120, 120, 120);
+            target.FillColor = Color.Red;
             window.SetActive();
 
-            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 0.15f, target, window);
+            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 3f, target, window);
 
             while(window.IsOpen)
             {
-                pop.LazyDraw();
-
-                throw new Exception();
-                //Console.ReadLine();
+                pop.FastDraw();
+                pop.Score();
             }
-
-
-            //List<Rocket> rockets = new List<Rocket>();
-            //for (int i = 0; i < specCount; i++)
-            //{
-            //    rockets.Add(new Rocket(DnaCount));
-            //}
-            //foreach (var r in rockets)
-            //{
-            //    r.MutationChance = mutationRate;
-            //    r.Mutate();
-            //}
-            //window.SetActive();
-            //while (window.IsOpen)
-            //{
-            //    window.Clear();
-            //    window.DispatchEvents();
-            //    //window.Draw(centerCollider);
-            //    window.Draw(target);
-            //    window.Display();
-
-            //    while (true)
-            //    {
-            //        window.Clear();
-            //        window.Draw(target);
-            //        foreach (var rocket in rockets)
-            //        {
-            //            for (int i = 0; i < rocket.DNASize; i++)
-            //            {
-            //                rocket.NextStep();
-            //                var r = new RectangleShape(new Vector2f(1, 1));
-            //                r.Position = new Vector2f(rocket.Position.X, 500 - rocket.Position.Y);
-            //                window.Draw(r);
-            //                if (rocket.Position.Y >= 500) break;
-            //            }
-            //        }
-            //        window.Display();
-
-
-            //        var scoredList = new List<KeyValuePair<Rocket, double>>();
-            //        foreach (var rocket in rockets)
-            //        {
-            //            var d = Math.Sqrt(Math.Pow(target.Position.X - rocket.Position.X, 2) + Math.Pow(target.Position.Y - (500 - rocket.Position.Y), 2));
-            //            scoredList.Add(new KeyValuePair<Rocket, double>(rocket, d));
-            //        }
-            //        scoredList = scoredList.OrderBy(x => x.Value).ToList();
-
-            //        var bestList = new List<Rocket>();
-            //        for (int i = 0; i < bestCount; i++)
-            //        {
-            //            bestList.Add(scoredList[i].Key);
-            //        }
-
-
-            //        rockets = new List<Rocket>();
-            //        for (int i = 0; i < specCount; i++)
-            //        {
-            //            rockets.Add(new Rocket(DnaCount));
-            //        }
-            //        foreach (var r in rockets)
-            //        {
-            //            r.DNA = bestList[new Random().Next(bestCount)].DNA;
-            //            r.MutationChance = mutationRate;
-            //            r.Mutate();
-            //        }
-            //        for (int i = 0; i < specCount; i++)
-            //        {
-            //            var r = new System.Random().Next(DnaCount);
-            //            var dna1 = rockets[i].DNA.Take(r);
-            //            var dna2 = rockets[new Random().Next(specCount)].DNA.Skip(r);
-            //            var dna = new Rocket.Move[DnaCount];
-            //            dna = dna1.Concat(dna2).ToArray();
-            //            rockets[i].DNA = dna;
-            //        }
-
-            //        //window.Display();
-            //        //Thread.Sleep(1000);
-            //    }
-            //}
-
-
-
         }
     }
 }
