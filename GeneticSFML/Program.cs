@@ -10,7 +10,7 @@ namespace GeneticSFML
 {
     public class Generation
     {
-        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance, RectangleShape target)
+        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance, RectangleShape target, RenderWindow renderWindow)
         {
             PopulationCount = populationCount;
             BestCount = bestCount;
@@ -18,11 +18,13 @@ namespace GeneticSFML
             StartPosition = startPosition;
             MutationChance = mutationChance;
             Target = target ?? throw new ArgumentNullException(nameof(target));
+            Window = renderWindow ?? throw new ArgumentNullException(nameof(renderWindow));
 
             Population = new Rocket[PopulationCount];
             for (int i = 0; i < PopulationCount; i++)
             {
                 Population[i] = new Rocket(startPosition, dnaSize, mutationChance);
+                Population[i].Mutate();
             }
         }
 
@@ -33,31 +35,65 @@ namespace GeneticSFML
         public float MutationChance { get; set; }
         public RectangleShape Target { get; set; }
         public Rocket[] Population { get; set; }
+        public RenderWindow Window { get; set; }
 
         public void Score()
         {
+            var scored = new KeyValuePair<Rocket, double>[PopulationCount];
+
+            for (int i = 0; i < PopulationCount; i++)
+            {
+                var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
+                scored[i] = new KeyValuePair<Rocket, double>(Population[i], score);
+            }
+            var best = scored
+                .OrderBy(x => x.Value)
+                .Take(BestCount)
+                .Select(x =>x.Key)
+                .ToArray();
+            Cross(best);
+        }
+        public void Cross(Rocket[] best)
+        {
+            if (best.Length != BestCount) throw new Exception("Best count fucked");
 
         }
-        public void Draw(RenderWindow window)
+        public void LazyDraw()
         {
             for (int j = 0; j < DnaSize; j++)
             {
                 for (int i = 0; i < PopulationCount; i++)
                 {
-                    if (Population[i].Position.Y >= window.Size.Y) continue;
+                    if (Population[i].Position.Y >= Window.Size.Y) continue;//If on top, skip
 
                     Population[i].NextStep();
                     var point = new RectangleShape(new Vector2f(1, 1));
-                    point.Position = new Vector2f(Population[i].Position.X, window.Size.Y - Population[i].Position.Y);
+                    point.Position = new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y);
                     point.OutlineThickness = 0;
                     point.FillColor = Color.White;
-                    window.Draw(point);
-                    window.Display();
-
+                    Window.Draw(point);
+                    Window.Display();
                 }
             }
         }
+        public void FastDraw()
+        {
+            for (int j = 0; j < DnaSize; j++)
+            {
+                for (int i = 0; i < PopulationCount; i++)
+                {
+                    if (Population[i].Position.Y >= Window.Size.Y) continue;//If on top, skip
 
+                    Population[i].NextStep();
+                    var point = new RectangleShape(new Vector2f(1, 1));
+                    point.Position = new Vector2f(Population[i].Position.X, Window.Size.Y - Population[i].Position.Y);
+                    point.OutlineThickness = 0;
+                    point.FillColor = Color.White;
+                    Window.Draw(point);
+                }
+            }
+            Window.Display();
+        }
     }
     public class Rocket
     {
@@ -146,14 +182,14 @@ namespace GeneticSFML
             target.FillColor = new Color(120, 120, 120);
             window.SetActive();
 
-            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 0.15f, target);
+            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 0.15f, target, window);
 
             while(window.IsOpen)
             {
-                pop.Draw(window);
+                pop.LazyDraw();
 
                 throw new Exception();
-                Console.ReadLine();
+                //Console.ReadLine();
             }
 
 
