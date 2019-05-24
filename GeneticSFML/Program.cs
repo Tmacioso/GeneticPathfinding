@@ -10,13 +10,20 @@ namespace GeneticSFML
 {
     public class Generation
     {
-        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance)
+        public Generation(int populationCount, int bestCount, int dnaSize, Vector2f startPosition, float mutationChance, RectangleShape target)
         {
             PopulationCount = populationCount;
             BestCount = bestCount;
             DnaSize = dnaSize;
             StartPosition = startPosition;
             MutationChance = mutationChance;
+            Target = target ?? throw new ArgumentNullException(nameof(target));
+
+            Population = new Rocket[PopulationCount];
+            for (int i = 0; i < PopulationCount; i++)
+            {
+                Population[i] = new Rocket(startPosition, dnaSize, mutationChance);
+            }
         }
 
         public int PopulationCount { get; set; }
@@ -24,7 +31,32 @@ namespace GeneticSFML
         public int DnaSize { get; set; }
         public Vector2f StartPosition { get; set; }
         public float MutationChance { get; set; }
+        public RectangleShape Target { get; set; }
+        public Rocket[] Population { get; set; }
 
+        public void Score()
+        {
+
+        }
+        public void Draw(RenderWindow window)
+        {
+            for (int j = 0; j < DnaSize; j++)
+            {
+                for (int i = 0; i < PopulationCount; i++)
+                {
+                    if (Population[i].Position.Y >= window.Size.Y) continue;
+
+                    Population[i].NextStep();
+                    var point = new RectangleShape(new Vector2f(1, 1));
+                    point.Position = new Vector2f(Population[i].Position.X, window.Size.Y - Population[i].Position.Y);
+                    point.OutlineThickness = 0;
+                    point.FillColor = Color.White;
+                    window.Draw(point);
+                    window.Display();
+
+                }
+            }
+        }
 
     }
     public class Rocket
@@ -35,17 +67,32 @@ namespace GeneticSFML
             Left,
             Right
         }
-        public Vector2f Position { get; set; } = new Vector2f(450, 0);//TODO remove
+        public Vector2f Position { get; set; }
         public Move[] DNA { get; set; }
         public int Step { get; set; } = 0;
         public int DNASize { get; set; }
         public float MutationChance { get; set; }
 
-        public Rocket(int genomeSize)
+
+
+        //public Rocket(int genomeSize)
+        //{
+        //    this.DNASize = genomeSize;
+        //    DNA = new Move[genomeSize];
+        //}
+
+        //public Rocket()
+        //{
+        //}
+
+        public Rocket(Vector2f position, int dNASize, float mutationChance)
         {
-            this.DNASize = genomeSize;
-            DNA = new Move[genomeSize];
+            Position = position;
+            DNASize = dNASize;
+            MutationChance = mutationChance;
+            DNA = new Move[DNASize];
         }
+
         public void Mutate()
         {
             for (int i = 0; i < DNASize; i++)
@@ -62,9 +109,9 @@ namespace GeneticSFML
             if (Step >= DNASize) return;
             switch (DNA[Step])
             {
-                //case Move.Up:
-                //    Position = new Vector2f(Position.X, Position.Y + 1);
-                //    break;
+                case Move.Up:
+                    Position = new Vector2f(Position.X, Position.Y + 1);
+                    break;
                 case Move.Left:
                     Position = new Vector2f(Position.X + 1, Position.Y);
                     break;
@@ -74,7 +121,7 @@ namespace GeneticSFML
                 default:
                     break;
             }
-            Position = new Vector2f(Position.X, Position.Y + 1);
+            //Position = new Vector2f(Position.X, Position.Y + 1);
 
             Step++;
         }
@@ -83,10 +130,10 @@ namespace GeneticSFML
     {
         static void Main(string[] args)
         {
-            int bestCount = 5;
-            int specCount = 70;
-            int DnaCount = 1500;
-            float mutationRate = 0.15f;
+            //int bestCount = 5;
+            //int specCount = 70;
+            //int DnaCount = 1500;
+            //float mutationRate = 0.15f;
 
             RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
 
@@ -97,85 +144,99 @@ namespace GeneticSFML
             var target = new RectangleShape(new Vector2f(50, 20));
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
             target.FillColor = new Color(120, 120, 120);
-
-
-            List<Rocket> rockets = new List<Rocket>();
-            for (int i = 0; i < specCount; i++)
-            {
-                rockets.Add(new Rocket(DnaCount));
-            }
-            foreach (var r in rockets)
-            {
-                r.MutationChance = mutationRate;
-                r.Mutate();
-            }
             window.SetActive();
-            while (window.IsOpen)
+
+            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 0.15f, target);
+
+            while(window.IsOpen)
             {
-                window.Clear();
-                window.DispatchEvents();
-                //window.Draw(centerCollider);
-                window.Draw(target);
-                window.Display();
+                pop.Draw(window);
 
-                while (true)
-                {
-                    window.Clear();
-                    window.Draw(target);
-                    foreach (var rocket in rockets)
-                    {
-                        for (int i = 0; i < rocket.DNASize; i++)
-                        {
-                            rocket.NextStep();
-                            var r = new RectangleShape(new Vector2f(1, 1));
-                            r.Position = new Vector2f(rocket.Position.X, 500 - rocket.Position.Y);
-                            window.Draw(r);
-                            if (rocket.Position.Y >= 500) break;
-                        }
-                    }
-                    window.Display();
-
-
-                    var scoredList = new List<KeyValuePair<Rocket, double>>();
-                    foreach (var rocket in rockets)
-                    {
-                        var d = Math.Sqrt(Math.Pow(target.Position.X - rocket.Position.X, 2) + Math.Pow(target.Position.Y - (500 - rocket.Position.Y), 2));
-                        scoredList.Add(new KeyValuePair<Rocket, double>(rocket, d));
-                    }
-                    scoredList = scoredList.OrderBy(x => x.Value).ToList();
-
-                    var bestList = new List<Rocket>();
-                    for (int i = 0; i < bestCount; i++)
-                    {
-                        bestList.Add(scoredList[i].Key);
-                    }
-
-
-                    rockets = new List<Rocket>();
-                    for (int i = 0; i < specCount; i++)
-                    {
-                        rockets.Add(new Rocket(DnaCount));
-                    }
-                    foreach (var r in rockets)
-                    {
-                        r.DNA = bestList[new Random().Next(bestCount)].DNA;
-                        r.MutationChance = mutationRate;
-                        r.Mutate();
-                    }
-                    for (int i = 0; i < specCount; i++)
-                    {
-                        var r = new System.Random().Next(DnaCount);
-                        var dna1 = rockets[i].DNA.Take(r);
-                        var dna2 = rockets[new Random().Next(specCount)].DNA.Skip(r);
-                        var dna = new Rocket.Move[DnaCount];
-                        dna = dna1.Concat(dna2).ToArray();
-                        rockets[i].DNA = dna;
-                    }
-
-                    //window.Display();
-                    //Thread.Sleep(1000);
-                }
+                throw new Exception();
+                Console.ReadLine();
             }
+
+
+            //List<Rocket> rockets = new List<Rocket>();
+            //for (int i = 0; i < specCount; i++)
+            //{
+            //    rockets.Add(new Rocket(DnaCount));
+            //}
+            //foreach (var r in rockets)
+            //{
+            //    r.MutationChance = mutationRate;
+            //    r.Mutate();
+            //}
+            //window.SetActive();
+            //while (window.IsOpen)
+            //{
+            //    window.Clear();
+            //    window.DispatchEvents();
+            //    //window.Draw(centerCollider);
+            //    window.Draw(target);
+            //    window.Display();
+
+            //    while (true)
+            //    {
+            //        window.Clear();
+            //        window.Draw(target);
+            //        foreach (var rocket in rockets)
+            //        {
+            //            for (int i = 0; i < rocket.DNASize; i++)
+            //            {
+            //                rocket.NextStep();
+            //                var r = new RectangleShape(new Vector2f(1, 1));
+            //                r.Position = new Vector2f(rocket.Position.X, 500 - rocket.Position.Y);
+            //                window.Draw(r);
+            //                if (rocket.Position.Y >= 500) break;
+            //            }
+            //        }
+            //        window.Display();
+
+
+            //        var scoredList = new List<KeyValuePair<Rocket, double>>();
+            //        foreach (var rocket in rockets)
+            //        {
+            //            var d = Math.Sqrt(Math.Pow(target.Position.X - rocket.Position.X, 2) + Math.Pow(target.Position.Y - (500 - rocket.Position.Y), 2));
+            //            scoredList.Add(new KeyValuePair<Rocket, double>(rocket, d));
+            //        }
+            //        scoredList = scoredList.OrderBy(x => x.Value).ToList();
+
+            //        var bestList = new List<Rocket>();
+            //        for (int i = 0; i < bestCount; i++)
+            //        {
+            //            bestList.Add(scoredList[i].Key);
+            //        }
+
+
+            //        rockets = new List<Rocket>();
+            //        for (int i = 0; i < specCount; i++)
+            //        {
+            //            rockets.Add(new Rocket(DnaCount));
+            //        }
+            //        foreach (var r in rockets)
+            //        {
+            //            r.DNA = bestList[new Random().Next(bestCount)].DNA;
+            //            r.MutationChance = mutationRate;
+            //            r.Mutate();
+            //        }
+            //        for (int i = 0; i < specCount; i++)
+            //        {
+            //            var r = new System.Random().Next(DnaCount);
+            //            var dna1 = rockets[i].DNA.Take(r);
+            //            var dna2 = rockets[new Random().Next(specCount)].DNA.Skip(r);
+            //            var dna = new Rocket.Move[DnaCount];
+            //            dna = dna1.Concat(dna2).ToArray();
+            //            rockets[i].DNA = dna;
+            //        }
+
+            //        //window.Display();
+            //        //Thread.Sleep(1000);
+            //    }
+            //}
+
+
+
         }
     }
 }
