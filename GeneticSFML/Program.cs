@@ -36,6 +36,8 @@ namespace GeneticSFML
         public RectangleShape Target { get; set; }
         public Rocket[] Population { get; set; }
         public RenderWindow Window { get; set; }
+        public List<RectangleShape> Colliders { get; set; } = new List<RectangleShape>();
+
         Random random = new Random();
 
         public void Score()
@@ -50,7 +52,7 @@ namespace GeneticSFML
             var best = scored
                 .OrderBy(x => x.Value)
                 .Take(BestCount)
-                .Select(x =>x.Key)
+                .Select(x => x.Key)
                 .ToArray();
 
             Cross(best);
@@ -106,6 +108,7 @@ namespace GeneticSFML
         {
             Window.Clear();
             Window.Draw(Target);
+            Colliders.ForEach(x => Window.Draw(x));
             Window.Display();
 
 
@@ -113,7 +116,7 @@ namespace GeneticSFML
             {
                 for (int j = 0; j < DnaSize; j++)
                 {
-                    if (Population[i].Position.Y >= Window.Size.Y) continue;//If on top, skip
+                    if (Population[i].Position.Y >= Window.Size.Y || CheckCollisions(Population[i])) continue;//If on top, skip
 
                     Population[i].NextStep();
                     var point = new RectangleShape(new Vector2f(1, 1));
@@ -124,6 +127,18 @@ namespace GeneticSFML
                 }
                 Window.Display();
             }
+        }
+        public bool CheckCollisions(Rocket rocket)
+        {
+            foreach (var item in Colliders)
+            {
+                if (rocket.Position.X > item.Position.X &&
+                    rocket.Position.X < item.Position.X + item.Size.X &&
+                    Window.Size.Y - rocket.Position.Y > item.Position.Y &&
+                    Window.Size.Y - rocket.Position.Y < item.Position.Y + item.Size.Y)
+                    return true;
+            }
+            return false;
         }
     }
     public class Rocket
@@ -202,11 +217,18 @@ namespace GeneticSFML
             var target = new RectangleShape(new Vector2f(20, 20));
             target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
             target.FillColor = Color.Red;
+
+            var centerCollider = new RectangleShape(new Vector2f(75, 75));
+            centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
+            centerCollider.FillColor = Color.Yellow;
+            //window.Draw(centerCollider);
+            //window.Display();
+
             window.SetActive();
+            var pop = new Generation(100, 5, 1000, new Vector2f(window.Size.X / 2, 0), 5f, target, window);
+            pop.Colliders.Add(centerCollider);
 
-            var pop = new Generation(100, 5, 1000, new Vector2f(50, 0), 3f, target, window);
-
-            while(window.IsOpen)
+            while (window.IsOpen)
             {
                 pop.FastDraw();
                 pop.Score();
