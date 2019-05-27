@@ -31,7 +31,7 @@ namespace GeneticSFML
                 {
                     for (int j = 0; j < DnaSize; j++)
                     {
-                        Population[i].DNA[j] = (Rocket.Move)random.Next(3);//3 -> without DOWN
+                        Population[i].DNA[j] = (Rocket.Move)random.Next(4);//3 -> without DOWN
                     }
                 }
             }
@@ -59,6 +59,7 @@ namespace GeneticSFML
         public Rocket[] Population { get; set; }
         public RenderWindow Window { get; set; }
         public List<RectangleShape> Colliders { get; set; } = new List<RectangleShape>();
+        public bool DeadlyCollisions { get; set; } = false;
 
         Random random = new Random();
 
@@ -71,11 +72,11 @@ namespace GeneticSFML
             {
                 //var score = Math.Sqrt(Math.Pow(Target.Position.X - Population[i].Position.X, 2) + Math.Pow(Target.Position.Y - (Window.Size.Y - Population[i].Position.Y), 2));
 
-                //if(Population[i].Fitness == -1 )
-                //{
-                //    scored[i] = new KeyValuePair<Rocket, double>(Population[i], float.MaxValue);
-                //    continue;
-                //}
+                if (DeadlyCollisions && Population[i].Fitness == -1)
+                {
+                    scored[i] = new KeyValuePair<Rocket, double>(Population[i], float.MaxValue);
+                    continue;
+                }
 
                 var score = Math.Sqrt(
                     Math.Pow((Target.Position.X) - Population[i].Position.X, 2) +
@@ -125,6 +126,8 @@ namespace GeneticSFML
                 .Select(x => x.Key)
                 .ToArray();
 
+
+
             Cross(best);
             Mutate();
 
@@ -157,10 +160,6 @@ namespace GeneticSFML
         public void FastDraw()
         {
             Window.Clear();
-            Window.Draw(Target);
-            Colliders.ForEach(x => Window.Draw(x));
-            Window.Display();
-
 
             for (int i = 0; i < PopulationCount; i++)
             {
@@ -184,7 +183,6 @@ namespace GeneticSFML
             Window.Draw(Target);
             Colliders.ForEach(x => Window.Draw(x));
             Window.Display();
-
         }
         public bool CheckCollisions(Rocket rocket)
         {
@@ -200,35 +198,37 @@ namespace GeneticSFML
         }
         public void PrintSolution(Rocket rocket)
         {
-            //var ss = Window.Capture();
-            //ss.SaveToFile($"[{DateTime.Now}] - Normal");
-
             Window.Clear();
             Window.Draw(Target);
             Colliders.ForEach(x => Window.Draw(x));
 
-            var bestRocket = new Rocket(StartPosition, DnaSize, BaseMutationChance);
-            bestRocket.DNA = rocket.DNA;
+            DrawRocket(rocket, Color.Green);
 
-            for (int j = 0; j < DnaSize; j++)
-            {
-                if (bestRocket.Position.Y >= Window.Size.Y || CheckCollisions(bestRocket)) continue;//If on top, skip
-
-                bestRocket.NextStep();
-                var point = new RectangleShape(new Vector2f(3, 3));
-                point.Position = new Vector2f(bestRocket.Position.X, Window.Size.Y - bestRocket.Position.Y);
-                point.OutlineThickness = 0;
-                point.FillColor = Color.Green;
-                Window.Draw(point);
-            }
             Window.Display();
-            //ss = Window.Capture();
-            //ss.SaveToFile($"[{DateTime.Now}] - Highlighted");
 
             Console.WriteLine("Solution: ");
             rocket.DNA.ToList().ForEach(x => Console.Write(x + " "));
             Console.WriteLine();
             Console.ReadLine();
+        }
+        public void DrawRocket(Rocket rocket, Color color)
+        {
+            VertexArray line = new VertexArray(PrimitiveType.LineStrip);
+            for (int i = 0; i < DnaSize; i++)
+            {
+                var r = new Rocket(StartPosition, DnaSize, BaseMutationChance);
+                r.DNA = rocket.DNA;
+
+                for (int j = 0; j < DnaSize; j++)
+                {
+                    if (r.Position.Y >= Window.Size.Y || CheckCollisions(r)) break;//If on top, skip
+
+                    r.NextStep();
+                    line.Append(new Vertex(new Vector2f(r.Position.X, Window.Size.Y - r.Position.Y), color));
+
+                    Window.Draw(line);
+                }
+            }
         }
     }
     public class Rocket
@@ -245,18 +245,7 @@ namespace GeneticSFML
         public int Step { get; set; } = 0;
         public int DNASize { get; set; }
         public float MutationChance { get; set; }
-
         public float Fitness { get; set; } = 0;
-
-        //public Rocket(int genomeSize)
-        //{
-        //    this.DNASize = genomeSize;
-        //    DNA = new Move[genomeSize];
-        //}
-
-        //public Rocket()
-        //{
-        //}
 
         public Rocket(Vector2f position, int dNASize, float mutationChance)
         {
@@ -306,66 +295,26 @@ namespace GeneticSFML
     {
         static void Main(string[] args)
         {
-            RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Windows");
+            RenderWindow window = new RenderWindow(new VideoMode(500, 500), "Generic SFML");
 
             var target = new RectangleShape(new Vector2f(30, 30));
-            target.Position = new Vector2f(window.Size.X / 2 - target.Size.X / 2, 0);
+            target.Position = new Vector2f(0, 0);
             target.FillColor = Color.Red;
 
-
-            //var left1 = new RectangleShape(new Vector2f(100, 20));
-            //left1.Position = new Vector2f(0, 120);
-            //left1.FillColor = Color.Yellow;
-
-            //var right1 = new RectangleShape(new Vector2f(350, 20));
-            //right1.Position = new Vector2f(150, 120);
-            //right1.FillColor = Color.Yellow;
-
-
-            //var left2 = new RectangleShape(new Vector2f(125, 20));
-            //left2.Position = new Vector2f(0, 140);
-            //left2.FillColor = Color.Yellow;
-
-            //var right2 = new RectangleShape(new Vector2f(500 - 125 - 50, 20));
-            //right2.Position = new Vector2f(125 + 50, 140);
-            //right2.FillColor = Color.Yellow;
-
-
-            var left3 = new RectangleShape(new Vector2f(150, 20));
-            left3.Position = new Vector2f(0, 160);
-            left3.FillColor = Color.Yellow;
-
-            var right3 = new RectangleShape(new Vector2f(500 - 150 - 50, 20));
-            right3.Position = new Vector2f(150 + 50, 160);
-            right3.FillColor = Color.Yellow;
-
-
-            var left4 = new RectangleShape(new Vector2f(175, 20));
-            left4.Position = new Vector2f(0, 180);
-            left4.FillColor = Color.Yellow;
-
-            var right4 = new RectangleShape(new Vector2f(500 - 175 - 50, 20));
-            right4.Position = new Vector2f(175 + 50, 180);
-            right4.FillColor = Color.Yellow;
-
-
-            var centerCollider = new RectangleShape(new Vector2f(50, 200));
-            centerCollider.Position = new Vector2f(window.Size.X / 2 - centerCollider.Size.X / 2, window.Size.Y / 2 - centerCollider.Size.Y / 2);
-            centerCollider.FillColor = Color.Yellow;
-
-
             window.SetActive();
-            var pop = new Generation(70, 5, 30000, new Vector2f(window.Size.X / 2, 0), 5f, target, window, true);
-            //pop.Colliders.Add(left1);
-            //pop.Colliders.Add(right1);
-            //pop.Colliders.Add(left2);
-            //pop.Colliders.Add(right2);
-            pop.Colliders.Add(left3);
-            pop.Colliders.Add(right3);
-            pop.Colliders.Add(left4);
-            pop.Colliders.Add(right4);
-            pop.MutationChanceIncrese = 2.5f;
-            //pop.Colliders.Add(centerCollider);
+            var pop = new Generation(100, 3, 8000, new Vector2f(window.Size.X-1, 0), 5f, target, window, true);
+            pop.MutationChanceIncrese = 1f;
+            pop.DeadlyCollisions = true;
+
+            var rnd = new Random();
+            for (int i = 0; i < 8; i++)
+            {
+                var a = rnd.Next(30, 100);
+                var col = new RectangleShape(new Vector2f(a, a));
+                col.FillColor = new Color(100, 100, 100);
+                col.Position = new Vector2f(rnd.Next(0, 500), rnd.Next(0, 500));
+                pop.Colliders.Add(col);
+            }
 
             while (window.IsOpen)
             {
